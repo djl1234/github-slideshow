@@ -1,13 +1,209 @@
----
-layout: presentation
----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cattle Feed Lot Monitor</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>Cattle Feed Lot Monitor</h1>
+            <span class="subtitle">10 Lots &middot; 5,000 Head Capacity</span>
+        </div>
+        <div class="header-right">
+            <button id="btn-alerts" class="btn btn-icon" title="Alerts">
+                <span class="icon">&#128276;</span>
+                <span id="alert-badge" class="badge hidden">0</span>
+            </button>
+            <button id="btn-add-cattle" class="btn btn-primary">+ Add Cattle</button>
+        </div>
+    </header>
 
-{% for post in site.posts reversed %}
-	{% include slide.html %}
-	<div class="page-break"></div>
-{% endfor %}
-{% unless site.simple-slideshow %}
-{% if site.overview %}
-<section id="overview" class="step" {% for attr in site.overview-data %} data-{{attr[0]}}="{{attr[1]}}"{% endfor %}></section>
-{% endif %}
-{% endunless %}
+    <nav id="main-nav">
+        <button class="nav-tab active" data-view="dashboard">Dashboard</button>
+        <button class="nav-tab" data-view="lots">Lot Details</button>
+        <button class="nav-tab" data-view="cattle">All Cattle</button>
+        <button class="nav-tab" data-view="alerts">Alerts</button>
+        <button class="nav-tab" data-view="reports">Reports</button>
+    </nav>
+
+    <!-- Dashboard View -->
+    <main id="view-dashboard" class="view active">
+        <div class="summary-cards" id="summary-cards"></div>
+        <div class="lots-grid" id="lots-grid"></div>
+    </main>
+
+    <!-- Lot Details View -->
+    <main id="view-lots" class="view">
+        <div class="lot-selector">
+            <label for="lot-select">Select Lot:</label>
+            <select id="lot-select"></select>
+        </div>
+        <div id="lot-detail-content"></div>
+    </main>
+
+    <!-- All Cattle View -->
+    <main id="view-cattle" class="view">
+        <div class="toolbar">
+            <input type="text" id="cattle-search" placeholder="Search by tag, breed, or lot...">
+            <select id="cattle-status-filter">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="processing">Processing</option>
+                <option value="deceased">Deceased</option>
+                <option value="medical">Medical Care</option>
+                <option value="pregnant">Pregnant</option>
+            </select>
+            <select id="cattle-lot-filter">
+                <option value="all">All Lots</option>
+            </select>
+        </div>
+        <div id="cattle-table-container"></div>
+    </main>
+
+    <!-- Alerts View -->
+    <main id="view-alerts" class="view">
+        <div class="toolbar">
+            <button id="btn-mark-all-read" class="btn btn-secondary">Mark All Read</button>
+            <button id="btn-clear-alerts" class="btn btn-secondary">Clear All</button>
+        </div>
+        <div id="alerts-list"></div>
+    </main>
+
+    <!-- Reports View -->
+    <main id="view-reports" class="view">
+        <div class="report-section">
+            <h2>Lot Capacity Summary</h2>
+            <table id="capacity-report" class="report-table"></table>
+        </div>
+        <div class="report-section">
+            <h2>Status Breakdown</h2>
+            <table id="status-report" class="report-table"></table>
+        </div>
+        <div class="report-section">
+            <h2>Days on Feed Distribution</h2>
+            <table id="dof-report" class="report-table"></table>
+        </div>
+    </main>
+
+    <!-- Add/Edit Cattle Modal -->
+    <div id="modal-cattle" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-cattle-title">Add Cattle</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="form-cattle">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cattle-tag">Tag Number *</label>
+                        <input type="text" id="cattle-tag" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cattle-lot">Lot *</label>
+                        <select id="cattle-lot" required></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cattle-breed">Breed</label>
+                        <input type="text" id="cattle-breed" placeholder="e.g. Angus, Hereford">
+                    </div>
+                    <div class="form-group">
+                        <label for="cattle-weight">Weight (lbs)</label>
+                        <input type="number" id="cattle-weight" min="0" step="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cattle-date-added">Date On Feed *</label>
+                        <input type="date" id="cattle-date-added" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cattle-status">Status</label>
+                        <select id="cattle-status">
+                            <option value="active">Active</option>
+                            <option value="medical">Medical Care</option>
+                            <option value="pregnant">Pregnant</option>
+                            <option value="processing">Processing</option>
+                            <option value="deceased">Deceased</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cattle-notes">Notes</label>
+                    <textarea id="cattle-notes" rows="3"></textarea>
+                </div>
+                <input type="hidden" id="cattle-id">
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Status Modal -->
+    <div id="modal-status" class="modal hidden">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h2>Change Status</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="form-status">
+                <p id="status-cattle-info"></p>
+                <div class="form-group">
+                    <label for="new-status">New Status</label>
+                    <select id="new-status" required>
+                        <option value="active">Active</option>
+                        <option value="medical">Medical Care</option>
+                        <option value="pregnant">Pregnant</option>
+                        <option value="processing">Moved to Processing</option>
+                        <option value="deceased">Deceased</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status-notes">Reason / Notes</label>
+                    <textarea id="status-notes" rows="2"></textarea>
+                </div>
+                <input type="hidden" id="status-cattle-id">
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Move Cattle Modal -->
+    <div id="modal-move" class="modal hidden">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h2>Move Cattle to Another Lot</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="form-move">
+                <p id="move-cattle-info"></p>
+                <div class="form-group">
+                    <label for="move-target-lot">Move to Lot</label>
+                    <select id="move-target-lot" required></select>
+                </div>
+                <input type="hidden" id="move-cattle-id">
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Move</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container"></div>
+
+    <script src="js/store.js"></script>
+    <script src="js/alerts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
