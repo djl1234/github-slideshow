@@ -1,13 +1,129 @@
----
-layout: presentation
----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Lil Beans - Grow Every Day!</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Stars background -->
+    <div class="stars" id="stars"></div>
 
-{% for post in site.posts reversed %}
-	{% include slide.html %}
-	<div class="page-break"></div>
-{% endfor %}
-{% unless site.simple-slideshow %}
-{% if site.overview %}
-<section id="overview" class="step" {% for attr in site.overview-data %} data-{{attr[0]}}="{{attr[1]}}"{% endfor %}></section>
-{% endif %}
-{% endunless %}
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen">
+      <div class="planet-bg"></div>
+      <div class="welcome-content">
+        <h1 class="title-bounce">Planet of the<br><span class="title-highlight">Lil Beans</span></h1>
+        <div class="welcome-bean" id="welcome-bean">
+          <div class="bean-character large">
+            <div class="bean-body">
+              <div class="bean-face">
+                <div class="bean-eye left"></div>
+                <div class="bean-eye right"></div>
+                <div class="bean-mouth happy"></div>
+              </div>
+              <div class="bean-leaf"></div>
+            </div>
+          </div>
+        </div>
+        <p class="subtitle">Grow your mind &amp; body every day!</p>
+        <div id="name-entry">
+          <input type="text" id="child-name" placeholder="What's your name?" maxlength="20" autocomplete="off">
+          <button id="start-btn" class="bean-btn">Let's Grow!</button>
+        </div>
+        <button id="continue-btn" class="bean-btn hidden">Welcome back, <span id="saved-name"></span>!</button>
+      </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard-screen" class="screen hidden">
+      <header class="app-header">
+        <div class="header-left">
+          <span class="greeting" id="greeting"></span>
+        </div>
+        <div class="header-right">
+          <div class="points-badge" id="points-badge">
+            <span class="points-icon">&#127793;</span>
+            <span id="total-points">0</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Bean Character Display -->
+      <div class="bean-display" id="bean-display">
+        <div class="bean-stage-label" id="stage-label">Lil Seed</div>
+        <div class="bean-character" id="main-bean">
+          <div class="bean-body" id="main-bean-body">
+            <div class="bean-face">
+              <div class="bean-eye left"></div>
+              <div class="bean-eye right"></div>
+              <div class="bean-mouth happy"></div>
+            </div>
+            <div class="bean-leaf" id="main-bean-leaf"></div>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progress-bar"></div>
+          <span class="progress-label" id="progress-label">0 / 10 to next stage</span>
+        </div>
+      </div>
+
+      <!-- Daily Goals -->
+      <div class="daily-goals">
+        <h2 class="section-title">Today's Goals <span class="date-display" id="date-display"></span></h2>
+        <div class="goals-list" id="goals-list">
+          <!-- Goals rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Daily Summary -->
+      <div class="daily-summary hidden" id="daily-summary">
+        <div class="summary-content">
+          <h2>Amazing Day!</h2>
+          <p id="summary-text"></p>
+          <div class="summary-bean">
+            <div class="bean-character celebration">
+              <div class="bean-body">
+                <div class="bean-face">
+                  <div class="bean-eye left"></div>
+                  <div class="bean-eye right"></div>
+                  <div class="bean-mouth huge-smile"></div>
+                </div>
+                <div class="bean-leaf"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Growth History -->
+      <div class="growth-section">
+        <h2 class="section-title">My Bean Journey</h2>
+        <div class="stage-timeline" id="stage-timeline">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Streak Display -->
+      <div class="streak-section" id="streak-section">
+        <div class="streak-flame" id="streak-flame">&#128293;</div>
+        <span id="streak-count">0</span> day streak!
+      </div>
+
+      <footer class="app-footer">
+        <button class="reset-btn" id="reset-btn">Start Over</button>
+      </footer>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div id="celebration-overlay" class="hidden">
+      <div class="confetti-container" id="confetti-container"></div>
+      <div class="celebration-message" id="celebration-message"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
