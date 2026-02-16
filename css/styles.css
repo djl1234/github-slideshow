@@ -726,6 +726,188 @@ form {
     white-space: nowrap;
 }
 
+/* === Lot Sheet Table === */
+.view-wide {
+    max-width: 100%;
+    padding: 16px;
+}
+
+.lotsheet-scroll-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    background: var(--color-surface);
+}
+
+.lotsheet-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.lotsheet-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Group header row */
+.lotsheet-group-row th {
+    background: #1a3a2a;
+    color: #a8d5ba;
+    text-align: center;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid #2c5e3f;
+    font-weight: 600;
+}
+
+.lotsheet-group-row .group-header {
+    border-left: 2px solid #4c956c;
+    border-right: 2px solid #4c956c;
+    background: #22503a;
+}
+
+/* Column header row */
+.lotsheet-header-row th {
+    background: var(--color-primary-dark);
+    color: white;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-primary);
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.lotsheet-header-row th:last-child {
+    border-right: none;
+}
+
+/* Body cells */
+.lotsheet-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #eef1f4;
+    border-right: 1px solid #f0f2f5;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.lotsheet-table td:last-child {
+    border-right: none;
+}
+
+.lotsheet-table tbody tr:nth-child(even) {
+    background: #f8faf9;
+}
+
+.lotsheet-table tbody tr:hover td {
+    background: #e8f5ee;
+}
+
+/* Cell type styling */
+.cell-lot {
+    text-align: center;
+    color: var(--color-primary-dark);
+}
+
+.cell-pen {
+    text-align: center;
+    color: var(--color-primary);
+}
+
+.cell-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.cell-date {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--color-text-light);
+}
+
+.cell-sex {
+    text-align: center;
+    font-weight: 600;
+}
+
+.cell-dof {
+    color: var(--color-primary-dark);
+}
+
+.cell-loc {
+    background: rgba(41, 128, 185, 0.04);
+}
+
+.cell-deads {
+    color: var(--color-danger);
+}
+
+.cell-cons {
+    color: var(--color-warning);
+    background: rgba(230, 126, 34, 0.04);
+}
+
+.cell-chgs {
+    color: var(--color-primary-dark);
+    font-weight: 500;
+}
+
+.cell-ratn {
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Footer totals */
+.lotsheet-table tfoot td {
+    padding: 8px;
+    background: #f0f4f1;
+    border-top: 2px solid var(--color-primary-dark);
+    font-size: 0.78rem;
+    color: var(--color-primary-dark);
+}
+
+/* Lot sheet action buttons */
+.lotsheet-table .action-btns {
+    position: sticky;
+    right: 0;
+    background: inherit;
+    display: flex;
+    gap: 2px;
+}
+
+.lotsheet-table .action-btns .btn-sm {
+    padding: 2px 6px;
+    font-size: 0.7rem;
+}
+
+/* Modal large */
+.modal-lg {
+    max-width: 700px;
+}
+
+.form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+.form-row-5 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 12px;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
     header {

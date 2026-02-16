@@ -23,6 +23,7 @@
 
     <nav id="main-nav">
         <button class="nav-tab active" data-view="dashboard">Dashboard</button>
+        <button class="nav-tab" data-view="lotsheet">Lot Sheet</button>
         <button class="nav-tab" data-view="lots">Lot Details</button>
         <button class="nav-tab" data-view="cattle">All Cattle</button>
         <button class="nav-tab" data-view="alerts">Alerts</button>
@@ -33,6 +34,25 @@
     <main id="view-dashboard" class="view active">
         <div class="summary-cards" id="summary-cards"></div>
         <div class="lots-grid" id="lots-grid"></div>
+    </main>
+
+    <!-- Lot Sheet View -->
+    <main id="view-lotsheet" class="view view-wide">
+        <div class="toolbar">
+            <input type="text" id="lotsheet-search" placeholder="Search by lot, pen, customer...">
+            <select id="lotsheet-sex-filter">
+                <option value="all">All Sex</option>
+                <option value="O">Steers (O)</option>
+                <option value="H">Heifers (H)</option>
+            </select>
+            <select id="lotsheet-prog-filter">
+                <option value="all">All Programs</option>
+                <option value="HOL">HOL</option>
+                <option value="DEF">DEF</option>
+            </select>
+            <button id="btn-add-pen" class="btn btn-primary">+ Add Lot</button>
+        </div>
+        <div id="lotsheet-table-container" class="lotsheet-scroll-container"></div>
     </main>
 
     <!-- Lot Details View -->
@@ -194,6 +214,161 @@
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
                     <button type="submit" class="btn btn-primary">Move</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Pen Modal -->
+    <div id="modal-pen" class="modal hidden">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2 id="modal-pen-title">Add Lot</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="form-pen">
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="pen-trl">Trl</label>
+                        <select id="pen-trl">
+                            <option value="Ultra">Ultra</option>
+                            <option value="HR">HR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-srt">Srt</label>
+                        <select id="pen-srt">
+                            <option value="Strt">Strt</option>
+                            <option value="Lot">Lot</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-prog">Prog</label>
+                        <select id="pen-prog">
+                            <option value="HOL">HOL</option>
+                            <option value="DEF">DEF</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="pen-lotnum">Lot # *</label>
+                        <input type="number" id="pen-lotnum" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-pen">Pen *</label>
+                        <input type="text" id="pen-pen" required placeholder="e.g. B25">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-sex">Sx</label>
+                        <select id="pen-sex">
+                            <option value="O">O (Steer)</option>
+                            <option value="H">H (Heifer)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pen-sfperhd">Sf/Hd</label>
+                        <input type="number" id="pen-sfperhd" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-bunkinperhd">Bunk In/Hd</label>
+                        <input type="number" id="pen-bunkinperhd" step="0.1">
+                    </div>
+                </div>
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="pen-avgwt">Avg Wt</label>
+                        <input type="number" id="pen-avgwt" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-ewt">EWT</label>
+                        <input type="number" id="pen-ewt" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-orighdin">Orig Hd In</label>
+                        <input type="number" id="pen-orighdin" step="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pen-datein">Date In *</label>
+                        <input type="text" id="pen-datein" required placeholder="M/D/YYYY">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-dateout">Date Out</label>
+                        <input type="text" id="pen-dateout" placeholder="M/D/YYYY">
+                    </div>
+                </div>
+                <div class="form-row form-row-5">
+                    <div class="form-group">
+                        <label for="pen-loclot">Loc Lot</label>
+                        <input type="number" id="pen-loclot" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-locpen">Loc Pen</label>
+                        <input type="number" id="pen-locpen" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-loch">Loc H</label>
+                        <input type="number" id="pen-loch" step="1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-locb">Loc B</label>
+                        <input type="number" id="pen-locb" step="1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-locr">Loc R</label>
+                        <input type="number" id="pen-locr" step="1" value="0">
+                    </div>
+                </div>
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="pen-sold">Sold</label>
+                        <input type="number" id="pen-sold" step="1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-deadsno">Deads No</label>
+                        <input type="number" id="pen-deadsno" step="1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-deadspct">Deads %</label>
+                        <input type="number" id="pen-deadspct" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="pen-consneg1">Cons -1</label>
+                        <input type="number" id="pen-consneg1" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-cons7d">Cons 7d</label>
+                        <input type="number" id="pen-cons7d" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-consytd">Cons YTD</label>
+                        <input type="number" id="pen-consytd" step="0.1">
+                    </div>
+                </div>
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label for="pen-curchgs">Cur Chgs ($)</label>
+                        <input type="number" id="pen-curchgs" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-ytdchgs">YTD Chgs ($)</label>
+                        <input type="number" id="pen-ytdchgs" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="pen-customer">Customer</label>
+                        <input type="text" id="pen-customer" placeholder="e.g. ARCADIA CO">
+                    </div>
+                </div>
+                <input type="hidden" id="pen-id">
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>

@@ -316,6 +316,71 @@ const Store = (function () {
         markInitialized();
     }
 
+    // --- Lot Sheet (Pen-level data) ---
+    const PENS_KEY = 'cflm_pens';
+
+    function getAllPens() {
+        return load(PENS_KEY) || [];
+    }
+
+    function savePens(pens) {
+        save(PENS_KEY, pens);
+    }
+
+    function addPen(data) {
+        var pens = getAllPens();
+        var record = Object.assign({ id: generateId() }, data);
+        pens.push(record);
+        savePens(pens);
+        return record;
+    }
+
+    function updatePen(id, updates) {
+        var pens = getAllPens();
+        var idx = pens.findIndex(function (p) { return p.id === id; });
+        if (idx === -1) return null;
+        Object.assign(pens[idx], updates);
+        savePens(pens);
+        return pens[idx];
+    }
+
+    function deletePen(id) {
+        var pens = getAllPens().filter(function (p) { return p.id !== id; });
+        savePens(pens);
+    }
+
+    function seedLotSheetData() {
+        var pens = [
+            { trl:'Ultra', srt:'Strt', prog:'HOL', fo:'', lotNum:51323, pen:'B25', sfPerHd:227, bunkInPerHd:12.4, sex:'O', avgWt:351, dof:308, dors:283, ewt:1228, dateIn:'4/3/2025', dateOut:'5/3/2026', origHdIn:135, locLot:127, locPen:121, locH:0, locB:6, locR:0, sold:3, deadsNo:5, deadsPct:3.70, ratn:'4/4', consNeg1:29.1, cons7d:28.5, consYtd:21.5, curChgs:2.81, ytdChgs:2.57, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Strt', prog:'HOL', fo:'', lotNum:51324, pen:'B54', sfPerHd:207, bunkInPerHd:11.3, sex:'O', avgWt:368, dof:308, dors:283, ewt:1296, dateIn:'4/3/2025', dateOut:'4/14/2026', origHdIn:135, locLot:129, locPen:122, locH:0, locB:7, locR:0, sold:1, deadsNo:5, deadsPct:3.70, ratn:'4/4', consNeg1:30.4, cons7d:31.1, consYtd:22.9, curChgs:2.91, ytdChgs:2.73, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Strt', prog:'DEF', fo:'', lotNum:51325, pen:'A13', sfPerHd:198, bunkInPerHd:10.8, sex:'H', avgWt:412, dof:295, dors:270, ewt:1185, dateIn:'4/16/2025', dateOut:'5/10/2026', origHdIn:142, locLot:134, locPen:128, locH:1, locB:4, locR:1, sold:2, deadsNo:6, deadsPct:4.23, ratn:'3/4', consNeg1:27.8, cons7d:27.2, consYtd:20.1, curChgs:2.65, ytdChgs:2.41, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Lot', prog:'HOL', fo:'', lotNum:51326, pen:'B30', sfPerHd:215, bunkInPerHd:11.7, sex:'O', avgWt:385, dof:280, dors:255, ewt:1310, dateIn:'4/28/2025', dateOut:'5/20/2026', origHdIn:128, locLot:122, locPen:117, locH:0, locB:5, locR:0, sold:1, deadsNo:4, deadsPct:3.13, ratn:'4/4', consNeg1:31.2, cons7d:30.8, consYtd:23.4, curChgs:2.98, ytdChgs:2.80, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Strt', prog:'DEF', fo:'', lotNum:51327, pen:'A07', sfPerHd:232, bunkInPerHd:12.6, sex:'H', avgWt:398, dof:275, dors:250, ewt:1195, dateIn:'5/1/2025', dateOut:'5/25/2026', origHdIn:118, locLot:112, locPen:107, locH:1, locB:3, locR:1, sold:0, deadsNo:5, deadsPct:4.24, ratn:'3/4', consNeg1:26.5, cons7d:26.0, consYtd:19.3, curChgs:2.55, ytdChgs:2.33, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Strt', prog:'HOL', fo:'', lotNum:51328, pen:'B42', sfPerHd:210, bunkInPerHd:11.5, sex:'O', avgWt:355, dof:265, dors:240, ewt:1245, dateIn:'5/14/2025', dateOut:'6/5/2026', origHdIn:140, locLot:135, locPen:129, locH:0, locB:6, locR:0, sold:0, deadsNo:4, deadsPct:2.86, ratn:'4/4', consNeg1:28.9, cons7d:28.3, consYtd:20.8, curChgs:2.72, ytdChgs:2.49, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Lot', prog:'DEF', fo:'', lotNum:51329, pen:'A20', sfPerHd:195, bunkInPerHd:10.6, sex:'H', avgWt:425, dof:252, dors:227, ewt:1205, dateIn:'5/28/2025', dateOut:'6/18/2026', origHdIn:145, locLot:139, locPen:132, locH:2, locB:4, locR:1, sold:1, deadsNo:5, deadsPct:3.45, ratn:'3/4', consNeg1:27.1, cons7d:26.6, consYtd:19.7, curChgs:2.60, ytdChgs:2.38, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Strt', prog:'HOL', fo:'', lotNum:51330, pen:'B18', sfPerHd:220, bunkInPerHd:12.0, sex:'O', avgWt:342, dof:240, dors:215, ewt:1218, dateIn:'6/10/2025', dateOut:'7/1/2026', origHdIn:130, locLot:126, locPen:121, locH:0, locB:5, locR:0, sold:0, deadsNo:3, deadsPct:2.31, ratn:'4/4', consNeg1:29.7, cons7d:29.1, consYtd:21.2, curChgs:2.75, ytdChgs:2.52, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Strt', prog:'DEF', fo:'', lotNum:51331, pen:'A35', sfPerHd:204, bunkInPerHd:11.1, sex:'H', avgWt:408, dof:225, dors:200, ewt:1175, dateIn:'6/25/2025', dateOut:'7/15/2026', origHdIn:138, locLot:133, locPen:127, locH:1, locB:4, locR:1, sold:0, deadsNo:4, deadsPct:2.90, ratn:'3/4', consNeg1:26.9, cons7d:26.4, consYtd:19.5, curChgs:2.58, ytdChgs:2.35, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Lot', prog:'HOL', fo:'', lotNum:51332, pen:'B09', sfPerHd:225, bunkInPerHd:12.3, sex:'O', avgWt:365, dof:210, dors:185, ewt:1270, dateIn:'7/8/2025', dateOut:'7/28/2026', origHdIn:125, locLot:121, locPen:116, locH:0, locB:5, locR:0, sold:0, deadsNo:3, deadsPct:2.40, ratn:'4/4', consNeg1:30.0, cons7d:29.5, consYtd:22.0, curChgs:2.85, ytdChgs:2.63, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Strt', prog:'DEF', fo:'', lotNum:51333, pen:'A28', sfPerHd:200, bunkInPerHd:10.9, sex:'H', avgWt:418, dof:195, dors:170, ewt:1190, dateIn:'7/22/2025', dateOut:'8/10/2026', origHdIn:148, locLot:143, locPen:136, locH:2, locB:4, locR:1, sold:0, deadsNo:4, deadsPct:2.70, ratn:'3/4', consNeg1:27.3, cons7d:26.8, consYtd:19.9, curChgs:2.62, ytdChgs:2.40, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Strt', prog:'HOL', fo:'', lotNum:51334, pen:'B37', sfPerHd:218, bunkInPerHd:11.9, sex:'O', avgWt:378, dof:180, dors:155, ewt:1285, dateIn:'8/5/2025', dateOut:'8/25/2026', origHdIn:132, locLot:128, locPen:123, locH:0, locB:5, locR:0, sold:0, deadsNo:3, deadsPct:2.27, ratn:'4/4', consNeg1:30.8, cons7d:30.2, consYtd:22.5, curChgs:2.88, ytdChgs:2.66, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Lot', prog:'DEF', fo:'', lotNum:51335, pen:'A42', sfPerHd:192, bunkInPerHd:10.5, sex:'H', avgWt:432, dof:165, dors:140, ewt:1210, dateIn:'8/18/2025', dateOut:'9/8/2026', origHdIn:150, locLot:146, locPen:140, locH:1, locB:4, locR:1, sold:0, deadsNo:3, deadsPct:2.00, ratn:'3/4', consNeg1:27.6, cons7d:27.0, consYtd:20.0, curChgs:2.63, ytdChgs:2.42, customer:'ARCADIA CO' },
+            { trl:'Ultra', srt:'Strt', prog:'HOL', fo:'', lotNum:51336, pen:'B62', sfPerHd:212, bunkInPerHd:11.6, sex:'O', avgWt:340, dof:150, dors:125, ewt:1235, dateIn:'9/1/2025', dateOut:'9/22/2026', origHdIn:136, locLot:133, locPen:128, locH:0, locB:5, locR:0, sold:0, deadsNo:2, deadsPct:1.47, ratn:'4/4', consNeg1:29.4, cons7d:28.8, consYtd:21.0, curChgs:2.78, ytdChgs:2.56, customer:'ARCADIA CO' },
+            { trl:'HR', srt:'Strt', prog:'DEF', fo:'', lotNum:51337, pen:'A15', sfPerHd:202, bunkInPerHd:11.0, sex:'H', avgWt:415, dof:135, dors:110, ewt:1180, dateIn:'9/15/2025', dateOut:'10/5/2026', origHdIn:140, locLot:137, locPen:131, locH:1, locB:4, locR:1, sold:0, deadsNo:2, deadsPct:1.43, ratn:'3/4', consNeg1:27.0, cons7d:26.5, consYtd:19.6, curChgs:2.57, ytdChgs:2.36, customer:'ARCADIA CO' }
+        ];
+
+        // Add IDs
+        pens.forEach(function (p) { p.id = generateId(); });
+        savePens(pens);
+    }
+
+    function resetAll() {
+        localStorage.removeItem(LOTS_KEY);
+        localStorage.removeItem(CATTLE_KEY);
+        localStorage.removeItem(ALERTS_KEY);
+        localStorage.removeItem(INITIALIZED_KEY);
+        localStorage.removeItem(PENS_KEY);
+    }
+
     return {
         LOT_COUNT,
         LOT_CAPACITY,
@@ -340,7 +405,13 @@ const Store = (function () {
         getDaysOnFeed,
         isInitialized,
         seedDemoData,
+        seedLotSheetData,
         resetAll,
-        generateId
+        generateId,
+        getAllPens,
+        savePens,
+        addPen,
+        updatePen,
+        deletePen
     };
 })();

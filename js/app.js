@@ -10,9 +10,14 @@
         if (!Store.isInitialized()) {
             Store.seedDemoData();
         }
+        // Seed lot sheet data if not yet done
+        if (Store.getAllPens().length === 0) {
+            Store.seedLotSheetData();
+        }
         initNavigation();
         initModals();
         initEventHandlers();
+        initLotSheetHandlers();
         renderDashboard();
         AlertSystem.updateBadge();
         populateLotDropdowns();
@@ -39,6 +44,7 @@
 
         switch (viewName) {
             case 'dashboard': renderDashboard(); break;
+            case 'lotsheet': renderLotSheet(); break;
             case 'lots': renderLotDetail(); break;
             case 'cattle': renderCattleTable(); break;
             case 'alerts': renderAlerts(); break;
@@ -620,5 +626,326 @@
             clearTimeout(timer);
             timer = setTimeout(fn, delay);
         };
+    }
+
+    // ============================================
+    // LOT SHEET VIEW
+    // ============================================
+
+    function renderLotSheet() {
+        var pens = Store.getAllPens();
+        var search = document.getElementById('lotsheet-search').value.toLowerCase();
+        var sexFilter = document.getElementById('lotsheet-sex-filter').value;
+        var progFilter = document.getElementById('lotsheet-prog-filter').value;
+
+        if (search) {
+            pens = pens.filter(function (p) {
+                return String(p.lotNum).indexOf(search) !== -1 ||
+                    p.pen.toLowerCase().indexOf(search) !== -1 ||
+                    (p.customer || '').toLowerCase().indexOf(search) !== -1 ||
+                    p.trl.toLowerCase().indexOf(search) !== -1;
+            });
+        }
+
+        if (sexFilter !== 'all') {
+            pens = pens.filter(function (p) { return p.sex === sexFilter; });
+        }
+
+        if (progFilter !== 'all') {
+            pens = pens.filter(function (p) { return p.prog === progFilter; });
+        }
+
+        // Sort by lot number
+        pens.sort(function (a, b) { return a.lotNum - b.lotNum; });
+
+        var container = document.getElementById('lotsheet-table-container');
+        container.innerHTML = buildLotSheetTable(pens);
+        attachLotSheetActions(container);
+    }
+
+    function buildLotSheetTable(pens) {
+        if (pens.length === 0) {
+            return '<div class="empty-state"><div class="empty-icon">&#128203;</div><p>No lot data found.</p></div>';
+        }
+
+        var html = '<table class="lotsheet-table">';
+
+        // Group header row
+        html += '<thead>';
+        html += '<tr class="lotsheet-group-row">';
+        html += '<th colspan="6"></th>';
+        html += '<th colspan="2" class="group-header">Capacity</th>';
+        html += '<th colspan="5" class="group-header">Animal Info</th>';
+        html += '<th colspan="2" class="group-header">Dates</th>';
+        html += '<th></th>';
+        html += '<th colspan="5" class="group-header">Location</th>';
+        html += '<th></th>';
+        html += '<th colspan="2" class="group-header">Deads</th>';
+        html += '<th></th>';
+        html += '<th colspan="3" class="group-header">Consumption (AsFed Lbs)</th>';
+        html += '<th colspan="2" class="group-header">Charges</th>';
+        html += '<th></th>';
+        html += '<th></th>';
+        html += '</tr>';
+
+        // Column header row
+        html += '<tr class="lotsheet-header-row">';
+        html += '<th>Trl</th>';
+        html += '<th>Srt</th>';
+        html += '<th>Prog</th>';
+        html += '<th>FO</th>';
+        html += '<th>Lot</th>';
+        html += '<th>Pen</th>';
+        html += '<th>Sf/Hd</th>';
+        html += '<th>Bunk In/Hd</th>';
+        html += '<th>Sx</th>';
+        html += '<th>AvWt</th>';
+        html += '<th>DOF</th>';
+        html += '<th>DORS</th>';
+        html += '<th>EWT</th>';
+        html += '<th>Date In</th>';
+        html += '<th>Date Out</th>';
+        html += '<th>Orig Hd In</th>';
+        html += '<th>Lot</th>';
+        html += '<th>Pen</th>';
+        html += '<th>H</th>';
+        html += '<th>B</th>';
+        html += '<th>R</th>';
+        html += '<th>Sold</th>';
+        html += '<th>No</th>';
+        html += '<th>%</th>';
+        html += '<th>Ratn</th>';
+        html += '<th>-1</th>';
+        html += '<th>7d</th>';
+        html += '<th>YTD</th>';
+        html += '<th>Cur Chgs</th>';
+        html += '<th>YTD Chgs</th>';
+        html += '<th>Customer</th>';
+        html += '<th>Actions</th>';
+        html += '</tr></thead>';
+
+        // Body
+        html += '<tbody>';
+        var totals = {
+            sfPerHd: 0, origHdIn: 0, locLot: 0, locPen: 0, locH: 0, locB: 0, locR: 0,
+            sold: 0, deadsNo: 0, count: pens.length
+        };
+
+        pens.forEach(function (p) {
+            // Calculate DOF from dateIn
+            var dof = p.dof || calcDOF(p.dateIn);
+            var dors = p.dors || (dof > 25 ? dof - 25 : 0);
+
+            html += '<tr data-pen-id="' + p.id + '">';
+            html += '<td>' + escapeHtml(p.trl || '') + '</td>';
+            html += '<td>' + escapeHtml(p.srt || '') + '</td>';
+            html += '<td>' + escapeHtml(p.prog || '') + '</td>';
+            html += '<td>' + escapeHtml(p.fo || '') + '</td>';
+            html += '<td class="cell-lot"><strong>' + (p.lotNum || '') + '</strong></td>';
+            html += '<td class="cell-pen"><strong>' + escapeHtml(p.pen || '') + '</strong></td>';
+            html += '<td class="cell-num">' + (p.sfPerHd || '') + '</td>';
+            html += '<td class="cell-num">' + (p.bunkInPerHd || '') + '</td>';
+            html += '<td class="cell-sex">' + escapeHtml(p.sex || '') + '</td>';
+            html += '<td class="cell-num">' + (p.avgWt || '') + '</td>';
+            html += '<td class="cell-num cell-dof"><strong>' + dof + '</strong></td>';
+            html += '<td class="cell-num">' + dors + '</td>';
+            html += '<td class="cell-num">' + (p.ewt || '') + '</td>';
+            html += '<td class="cell-date">' + escapeHtml(p.dateIn || '') + '</td>';
+            html += '<td class="cell-date">' + escapeHtml(p.dateOut || '') + '</td>';
+            html += '<td class="cell-num">' + (p.origHdIn || '') + '</td>';
+            html += '<td class="cell-num cell-loc">' + (p.locLot || '') + '</td>';
+            html += '<td class="cell-num cell-loc">' + (p.locPen || '') + '</td>';
+            html += '<td class="cell-num cell-loc">' + (p.locH || 0) + '</td>';
+            html += '<td class="cell-num cell-loc">' + (p.locB || 0) + '</td>';
+            html += '<td class="cell-num cell-loc">' + (p.locR || 0) + '</td>';
+            html += '<td class="cell-num">' + (p.sold || 0) + '</td>';
+            html += '<td class="cell-num cell-deads">' + (p.deadsNo || 0) + '</td>';
+            html += '<td class="cell-num cell-deads">' + (p.deadsPct != null ? p.deadsPct.toFixed(2) : '0.00') + '</td>';
+            html += '<td class="cell-ratn">' + escapeHtml(p.ratn || '') + '</td>';
+            html += '<td class="cell-num cell-cons">' + (p.consNeg1 != null ? p.consNeg1.toFixed(1) : '') + '</td>';
+            html += '<td class="cell-num cell-cons">' + (p.cons7d != null ? p.cons7d.toFixed(1) : '') + '</td>';
+            html += '<td class="cell-num cell-cons">' + (p.consYtd != null ? p.consYtd.toFixed(1) : '') + '</td>';
+            html += '<td class="cell-num cell-chgs">$' + (p.curChgs != null ? p.curChgs.toFixed(2) : '0.00') + '</td>';
+            html += '<td class="cell-num cell-chgs">$' + (p.ytdChgs != null ? p.ytdChgs.toFixed(2) : '0.00') + '</td>';
+            html += '<td>' + escapeHtml(p.customer || '') + '</td>';
+            html += '<td class="action-btns">';
+            html += '<button class="btn btn-sm btn-secondary btn-edit-pen" data-id="' + p.id + '">Edit</button> ';
+            html += '<button class="btn btn-sm btn-danger btn-delete-pen" data-id="' + p.id + '">Del</button>';
+            html += '</td>';
+            html += '</tr>';
+
+            totals.origHdIn += (p.origHdIn || 0);
+            totals.locLot += (p.locLot || 0);
+            totals.locPen += (p.locPen || 0);
+            totals.locH += (p.locH || 0);
+            totals.locB += (p.locB || 0);
+            totals.locR += (p.locR || 0);
+            totals.sold += (p.sold || 0);
+            totals.deadsNo += (p.deadsNo || 0);
+        });
+
+        html += '</tbody>';
+
+        // Footer totals
+        var totalDeadsPct = totals.origHdIn > 0 ? ((totals.deadsNo / totals.origHdIn) * 100).toFixed(2) : '0.00';
+        html += '<tfoot><tr>';
+        html += '<td colspan="15"><strong>TOTALS (' + pens.length + ' lots)</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.origHdIn + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.locLot + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.locPen + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.locH + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.locB + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.locR + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.sold + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totals.deadsNo + '</strong></td>';
+        html += '<td class="cell-num"><strong>' + totalDeadsPct + '</strong></td>';
+        html += '<td colspan="7"></td>';
+        html += '</tr></tfoot>';
+
+        html += '</table>';
+        return html;
+    }
+
+    function calcDOF(dateStr) {
+        if (!dateStr) return 0;
+        var parts = dateStr.split('/');
+        if (parts.length < 3) return 0;
+        var d = new Date(parseInt(parts[2], 10), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
+        var now = new Date();
+        return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+    }
+
+    function attachLotSheetActions(container) {
+        container.querySelectorAll('.btn-edit-pen').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                openEditPen(this.getAttribute('data-id'));
+            });
+        });
+        container.querySelectorAll('.btn-delete-pen').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var id = this.getAttribute('data-id');
+                if (confirm('Delete this lot entry? This cannot be undone.')) {
+                    Store.deletePen(id);
+                    renderLotSheet();
+                }
+            });
+        });
+    }
+
+    function openAddPen() {
+        document.getElementById('modal-pen-title').textContent = 'Add Lot';
+        document.getElementById('form-pen').reset();
+        document.getElementById('pen-id').value = '';
+        document.getElementById('pen-loch').value = '0';
+        document.getElementById('pen-locb').value = '0';
+        document.getElementById('pen-locr').value = '0';
+        document.getElementById('pen-sold').value = '0';
+        document.getElementById('pen-deadsno').value = '0';
+        document.getElementById('pen-deadspct').value = '0';
+        document.getElementById('modal-pen').classList.remove('hidden');
+    }
+
+    function openEditPen(id) {
+        var pens = Store.getAllPens();
+        var pen = pens.find(function (p) { return p.id === id; });
+        if (!pen) return;
+
+        document.getElementById('modal-pen-title').textContent = 'Edit Lot ' + pen.lotNum + ' - Pen ' + pen.pen;
+        document.getElementById('pen-id').value = pen.id;
+        document.getElementById('pen-trl').value = pen.trl || 'Ultra';
+        document.getElementById('pen-srt').value = pen.srt || 'Strt';
+        document.getElementById('pen-prog').value = pen.prog || 'HOL';
+        document.getElementById('pen-lotnum').value = pen.lotNum || '';
+        document.getElementById('pen-pen').value = pen.pen || '';
+        document.getElementById('pen-sex').value = pen.sex || 'O';
+        document.getElementById('pen-sfperhd').value = pen.sfPerHd || '';
+        document.getElementById('pen-bunkinperhd').value = pen.bunkInPerHd || '';
+        document.getElementById('pen-avgwt').value = pen.avgWt || '';
+        document.getElementById('pen-ewt').value = pen.ewt || '';
+        document.getElementById('pen-orighdin').value = pen.origHdIn || '';
+        document.getElementById('pen-datein').value = pen.dateIn || '';
+        document.getElementById('pen-dateout').value = pen.dateOut || '';
+        document.getElementById('pen-loclot').value = pen.locLot || '';
+        document.getElementById('pen-locpen').value = pen.locPen || '';
+        document.getElementById('pen-loch').value = pen.locH || 0;
+        document.getElementById('pen-locb').value = pen.locB || 0;
+        document.getElementById('pen-locr').value = pen.locR || 0;
+        document.getElementById('pen-sold').value = pen.sold || 0;
+        document.getElementById('pen-deadsno').value = pen.deadsNo || 0;
+        document.getElementById('pen-deadspct').value = pen.deadsPct || 0;
+        document.getElementById('pen-consneg1').value = pen.consNeg1 || '';
+        document.getElementById('pen-cons7d').value = pen.cons7d || '';
+        document.getElementById('pen-consytd').value = pen.consYtd || '';
+        document.getElementById('pen-curchgs').value = pen.curChgs || '';
+        document.getElementById('pen-ytdchgs').value = pen.ytdChgs || '';
+        document.getElementById('pen-customer').value = pen.customer || '';
+        document.getElementById('modal-pen').classList.remove('hidden');
+    }
+
+    function initLotSheetHandlers() {
+        // Add pen button
+        document.getElementById('btn-add-pen').addEventListener('click', openAddPen);
+
+        // Lot sheet search and filters
+        document.getElementById('lotsheet-search').addEventListener('input', debounce(renderLotSheet, 300));
+        document.getElementById('lotsheet-sex-filter').addEventListener('change', renderLotSheet);
+        document.getElementById('lotsheet-prog-filter').addEventListener('change', renderLotSheet);
+
+        // Add/Edit pen form
+        document.getElementById('form-pen').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var id = document.getElementById('pen-id').value;
+            var data = {
+                trl: document.getElementById('pen-trl').value,
+                srt: document.getElementById('pen-srt').value,
+                prog: document.getElementById('pen-prog').value,
+                fo: '',
+                lotNum: parseInt(document.getElementById('pen-lotnum').value, 10),
+                pen: document.getElementById('pen-pen').value.trim(),
+                sex: document.getElementById('pen-sex').value,
+                sfPerHd: parseInt(document.getElementById('pen-sfperhd').value, 10) || 0,
+                bunkInPerHd: parseFloat(document.getElementById('pen-bunkinperhd').value) || 0,
+                avgWt: parseInt(document.getElementById('pen-avgwt').value, 10) || 0,
+                ewt: parseInt(document.getElementById('pen-ewt').value, 10) || 0,
+                origHdIn: parseInt(document.getElementById('pen-orighdin').value, 10) || 0,
+                dateIn: document.getElementById('pen-datein').value.trim(),
+                dateOut: document.getElementById('pen-dateout').value.trim(),
+                locLot: parseInt(document.getElementById('pen-loclot').value, 10) || 0,
+                locPen: parseInt(document.getElementById('pen-locpen').value, 10) || 0,
+                locH: parseInt(document.getElementById('pen-loch').value, 10) || 0,
+                locB: parseInt(document.getElementById('pen-locb').value, 10) || 0,
+                locR: parseInt(document.getElementById('pen-locr').value, 10) || 0,
+                sold: parseInt(document.getElementById('pen-sold').value, 10) || 0,
+                deadsNo: parseInt(document.getElementById('pen-deadsno').value, 10) || 0,
+                deadsPct: parseFloat(document.getElementById('pen-deadspct').value) || 0,
+                ratn: '',
+                consNeg1: parseFloat(document.getElementById('pen-consneg1').value) || 0,
+                cons7d: parseFloat(document.getElementById('pen-cons7d').value) || 0,
+                consYtd: parseFloat(document.getElementById('pen-consytd').value) || 0,
+                curChgs: parseFloat(document.getElementById('pen-curchgs').value) || 0,
+                ytdChgs: parseFloat(document.getElementById('pen-ytdchgs').value) || 0,
+                customer: document.getElementById('pen-customer').value.trim()
+            };
+
+            // Calculate DOF and DORS
+            data.dof = calcDOF(data.dateIn);
+            data.dors = data.dof > 25 ? data.dof - 25 : 0;
+
+            // Calculate deads %
+            if (data.origHdIn > 0 && data.deadsNo > 0) {
+                data.deadsPct = parseFloat(((data.deadsNo / data.origHdIn) * 100).toFixed(2));
+            }
+
+            if (id) {
+                Store.updatePen(id, data);
+            } else {
+                Store.addPen(data);
+            }
+
+            document.getElementById('modal-pen').classList.add('hidden');
+            renderLotSheet();
+        });
     }
 })();
