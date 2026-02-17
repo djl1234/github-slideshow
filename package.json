@@ -1,0 +1,17 @@
+{
+  "name": "github-slideshow",
+  "version": "1.0.0",
+  "description": "Welcome to **your** repository for your GitHub Learning Lab course. This repository will be used during the different activities that I will be guiding you through. See a word you don't understand? We've included an emoji 📖 next to some key terms. Click on it to see its definition.",
+  "main": "app.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:18659/git/djl1234/github-slideshow"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
