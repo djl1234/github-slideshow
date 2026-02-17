@@ -37,7 +37,7 @@ try {
 var inputFolder = process.argv[2] || path.join(__dirname, '..', 'yard-sheets');
 
 // --- Header patterns (same as browser module) ---
-var HEADER_KEYWORDS = ['lot', 'pen', 'dof', 'hd', 'wt', 'date', 'sx', 'ewt', 'sold'];
+var HEADER_KEYWORDS = ['lot', 'pen', 'dof', 'hd', 'wt', 'date', 'sx', 'ewt', 'sold', 'trl', 'prog', 'orig', 'bunk', 'ratn', 'cust'];
 
 var FIELD_PATTERNS = {
     trl:         /^trl$/i,
@@ -95,7 +95,7 @@ function parseYardSheetText(text, sourceFile) {
         HEADER_KEYWORDS.forEach(function (kw) {
             if (line.indexOf(kw) !== -1) matches++;
         });
-        if (matches >= 3) {
+        if (matches >= 2) {
             headerIdx = i;
             headerFields = identifyColumns(lines[i]);
             break;
@@ -199,11 +199,11 @@ function convertValue(field, value) {
 }
 
 function tryPatternParse(text, sourceFile) {
-    var lotMatch = text.match(/\b(\d{5})\b/);
+    var lotMatch = text.match(/\b(\d{4,6})\b/);
     if (!lotMatch) return null;
 
     var penMatch = text.match(/\b([A-Z]\d{1,3})\b/);
-    var dateMatches = text.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/g);
+    var dateMatches = text.match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/g);
     var sexMatch = text.match(/\b([OH])\b/);
 
     if (!penMatch) return null;

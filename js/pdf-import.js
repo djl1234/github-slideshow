@@ -95,10 +95,22 @@ var PDFImport = (function () {
     function groupTextIntoRows(items) {
         if (!items || items.length === 0) return [];
 
+        // Determine a Y tolerance based on the typical font size in the document.
+        // item.transform is [scaleX, skewY, skewX, scaleY, x, y] where scaleX ~ font size.
+        var avgFontSize = 0;
+        var count = 0;
+        items.forEach(function (item) {
+            var fs = Math.abs(item.transform[0]) || Math.abs(item.transform[3]);
+            if (fs > 0) { avgFontSize += fs; count++; }
+        });
+        avgFontSize = count > 0 ? avgFontSize / count : 10;
+        // Y tolerance: half the average font size, clamped between 3 and 10
+        var yTolerance = Math.max(3, Math.min(10, avgFontSize * 0.6));
+
         // Sort items by Y (descending = top to bottom), then X (left to right)
         var sorted = items.slice().sort(function (a, b) {
             var yDiff = b.transform[5] - a.transform[5]; // Y descending
-            if (Math.abs(yDiff) > 3) return yDiff;
+            if (Math.abs(yDiff) > yTolerance) return yDiff;
             return a.transform[4] - b.transform[4]; // X ascending
         });
 
@@ -108,8 +120,8 @@ var PDFImport = (function () {
 
         sorted.forEach(function (item) {
             var y = item.transform[5];
-            // If Y position differs by more than 3 units, it's a new row
-            if (Math.abs(y - currentY) > 3) {
+            // If Y position differs by more than the tolerance, it's a new row
+            if (Math.abs(y - currentY) > yTolerance) {
                 if (currentRow.length > 0) {
                     rows.push(buildRowFromItems(currentRow));
                 }
@@ -141,8 +153,15 @@ var PDFImport = (function () {
             var text = item.str.trim();
             if (!text) return;
 
-            // If gap > 10 units, consider it a new cell
-            if (x - prevEnd > 10) {
+            // Calculate the rendered width of this text item in page space.
+            // item.width is in text space; multiply by the horizontal scale factor.
+            var fontSize = Math.abs(item.transform[0]) || Math.abs(item.transform[3]) || 10;
+            var renderedWidth = item.width ? item.width : text.length * fontSize * 0.5;
+            // Gap threshold: 1.5x the font size (roughly the width of one character)
+            var gapThreshold = Math.max(5, fontSize * 1.5);
+
+            // If gap > threshold, consider it a new cell
+            if (x - prevEnd > gapThreshold) {
                 cells.push({ text: text, x: x });
             } else {
                 // Append to previous cell
@@ -152,7 +171,7 @@ var PDFImport = (function () {
                     cells.push({ text: text, x: x });
                 }
             }
-            prevEnd = x + (item.width || text.length * 5);
+            prevEnd = x + renderedWidth;
         });
 
         return {
@@ -198,26 +217,35 @@ var PDFImport = (function () {
      * Find the header row in the page and identify column positions.
      */
     function findHeaderRow(rows) {
-        for (var i = 0; i < Math.min(rows.length, 15); i++) {
+        var bestMatch = null;
+        var bestScore = 0;
+
+        for (var i = 0; i < Math.min(rows.length, 20); i++) {
             var text = rows[i].text.toLowerCase();
             var cells = rows[i].cells;
 
             // Check if this row contains enough header keywords
             var matches = 0;
-            var keywords = ['lot', 'pen', 'dof', 'hd', 'wt', 'date'];
+            var keywords = ['lot', 'pen', 'dof', 'hd', 'wt', 'date', 'ewt', 'sold', 'sx', 'trl', 'prog', 'orig', 'bunk', 'ratn', 'cust'];
             keywords.forEach(function (kw) {
                 if (text.indexOf(kw) !== -1) matches++;
             });
 
-            if (matches >= 3) {
+            // Accept if we match at least 2 keywords AND have enough cells
+            if (matches >= 2 && cells.length >= 3) {
                 // Map cell positions to field names
                 var columns = mapHeaderCells(cells);
-                if (Object.keys(columns).length >= 3) {
-                    return { index: i, columns: columns };
+                var colCount = Object.keys(columns).length;
+                // Score by both keyword matches and identified columns
+                var score = matches + colCount;
+                if (colCount >= 2 && score > bestScore) {
+                    bestScore = score;
+                    bestMatch = { index: i, columns: columns };
                 }
             }
         }
-        return null;
+
+        return bestMatch;
     }
 
     /**
@@ -278,6 +306,19 @@ var PDFImport = (function () {
         var cells = row.cells;
         if (!cells || cells.length < 3) return null;
 
+        // Calculate the average column spacing to set a dynamic tolerance
+        var colXValues = Object.keys(columns).map(function (f) { return columns[f].x; }).sort(function (a, b) { return a - b; });
+        var avgSpacing = 50; // default
+        if (colXValues.length > 1) {
+            var totalSpacing = 0;
+            for (var i = 1; i < colXValues.length; i++) {
+                totalSpacing += colXValues[i] - colXValues[i - 1];
+            }
+            avgSpacing = totalSpacing / (colXValues.length - 1);
+        }
+        // Allow matching within 75% of the average column spacing
+        var xTolerance = Math.max(30, avgSpacing * 0.75);
+
         // Match data cells to header columns by nearest X position
         var pen = {};
         Object.keys(columns).forEach(function (field) {
@@ -300,7 +341,7 @@ var PDFImport = (function () {
 
             // Use whichever match is more reasonable
             var value = '';
-            if (best && bestDist < 30) {
+            if (best && bestDist < xTolerance) {
                 value = best.text.trim();
             } else if (indexCell) {
                 value = indexCell.text.trim();
@@ -371,15 +412,15 @@ var PDFImport = (function () {
      * Looks for known data patterns (lot numbers, pen IDs, dates, weights).
      */
     function tryPatternParse(text) {
-        // Look for lot number pattern: 5-digit number
-        var lotMatch = text.match(/\b(\d{5})\b/);
+        // Look for lot number pattern: 4-6 digit number
+        var lotMatch = text.match(/\b(\d{4,6})\b/);
         if (!lotMatch) return null;
 
         // Look for pen pattern: letter + digits (e.g. B25, A13)
         var penMatch = text.match(/\b([A-Z]\d{1,3})\b/);
 
-        // Look for date pattern: M/D/YYYY or MM/DD/YYYY
-        var dateMatches = text.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/g);
+        // Look for date pattern: M/D/YYYY, MM/DD/YYYY, or M/D/YY
+        var dateMatches = text.match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/g);
 
         // Look for sex: standalone O or H
         var sexMatch = text.match(/\b([OH])\b/);
