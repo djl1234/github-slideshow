@@ -947,5 +947,194 @@
             document.getElementById('modal-pen').classList.add('hidden');
             renderLotSheet();
         });
+
+        // --- PDF Import Handlers ---
+        initPDFImportHandlers();
+    }
+
+    // ============================================
+    // PDF IMPORT HANDLERS
+    // ============================================
+
+    var _pendingImportPens = [];
+
+    function initPDFImportHandlers() {
+        var fileInput = document.getElementById('pdf-file-input');
+        var importBtn = document.getElementById('btn-import-pdf');
+        var browseBtn = document.getElementById('btn-browse-files');
+        var dropzone = document.getElementById('import-dropzone');
+        var cancelBtn = document.getElementById('btn-import-cancel');
+        var saveBtn = document.getElementById('btn-import-save');
+
+        // "Import PDFs" button in toolbar opens the import modal
+        importBtn.addEventListener('click', function () {
+            resetImportModal();
+            document.getElementById('modal-import').classList.remove('hidden');
+        });
+
+        // "Browse Files" button inside modal triggers the file input
+        browseBtn.addEventListener('click', function () {
+            fileInput.click();
+        });
+
+        // File input change handler
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files.length > 0) {
+                processImportFiles(fileInput.files);
+            }
+        });
+
+        // Drag & drop handlers
+        dropzone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                processImportFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Cancel import
+        cancelBtn.addEventListener('click', function () {
+            _pendingImportPens = [];
+            document.getElementById('modal-import').classList.add('hidden');
+        });
+
+        // Save imported data
+        saveBtn.addEventListener('click', function () {
+            if (_pendingImportPens.length === 0) return;
+
+            var replace = document.getElementById('import-replace').checked;
+            var count = PDFImport.saveImportedPens(_pendingImportPens, replace);
+            _pendingImportPens = [];
+            document.getElementById('modal-import').classList.add('hidden');
+
+            // Refresh the lot sheet view
+            renderLotSheet();
+            AlertSystem.showToast('Imported ' + count + ' lot records from yard sheets.', 'capacity');
+        });
+    }
+
+    function resetImportModal() {
+        _pendingImportPens = [];
+        document.getElementById('import-dropzone').classList.remove('hidden');
+        document.getElementById('import-processing').classList.add('hidden');
+        document.getElementById('import-preview').classList.add('hidden');
+        document.getElementById('import-replace').checked = false;
+        document.getElementById('pdf-file-input').value = '';
+    }
+
+    function processImportFiles(files) {
+        var dropzone = document.getElementById('import-dropzone');
+        var processing = document.getElementById('import-processing');
+        var statusText = document.getElementById('import-status-text');
+
+        // Show processing state
+        dropzone.classList.add('hidden');
+        processing.classList.remove('hidden');
+
+        var pdfCount = Array.from(files).filter(function (f) {
+            return f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+        }).length;
+
+        statusText.textContent = 'Reading ' + pdfCount + ' PDF file' + (pdfCount !== 1 ? 's' : '') + '...';
+
+        PDFImport.importFiles(files).then(function (result) {
+            processing.classList.add('hidden');
+            _pendingImportPens = result.pens;
+            showImportPreview(result);
+        }).catch(function (err) {
+            processing.classList.add('hidden');
+            dropzone.classList.remove('hidden');
+            AlertSystem.showToast('Import failed: ' + err.message, 'death');
+        });
+    }
+
+    function showImportPreview(result) {
+        var preview = document.getElementById('import-preview');
+        preview.classList.remove('hidden');
+
+        // Summary
+        document.getElementById('import-file-count').textContent = result.fileCount + ' file' + (result.fileCount !== 1 ? 's' : '') + ' processed';
+        document.getElementById('import-row-count').textContent = result.pens.length + ' lot record' + (result.pens.length !== 1 ? 's' : '') + ' found';
+
+        // Errors
+        var errorContainer = document.getElementById('import-errors');
+        var errorCount = document.getElementById('import-error-count');
+        if (result.errors.length > 0) {
+            errorCount.classList.remove('hidden');
+            errorCount.textContent = result.errors.length + ' error' + (result.errors.length !== 1 ? 's' : '');
+            errorContainer.classList.remove('hidden');
+            var errorHtml = '<div class="import-error-list">';
+            result.errors.forEach(function (err) {
+                errorHtml += '<div class="import-error-item">';
+                errorHtml += '<strong>' + escapeHtml(err.file) + ':</strong> ' + escapeHtml(err.error);
+                errorHtml += '</div>';
+            });
+            errorHtml += '</div>';
+            errorContainer.innerHTML = errorHtml;
+        } else {
+            errorCount.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+        }
+
+        // Preview table
+        var tableContainer = document.getElementById('import-preview-table');
+        if (result.pens.length === 0) {
+            tableContainer.innerHTML = '<div class="empty-state"><p>No lot data could be extracted from the PDF' + (result.fileCount !== 1 ? 's' : '') + '.</p>' +
+                '<p style="font-size:0.8rem;color:var(--color-text-light);">The parser looks for tabular data with columns like Lot, Pen, DOF, Hd, Wt, Date. If your yard sheets use a different format, you can manually add lots or try a different file.</p></div>';
+            document.getElementById('btn-import-save').disabled = true;
+            return;
+        }
+
+        document.getElementById('btn-import-save').disabled = false;
+        tableContainer.innerHTML = buildImportPreviewTable(result.pens);
+    }
+
+    function buildImportPreviewTable(pens) {
+        var html = '<table class="lotsheet-table">';
+        html += '<thead><tr class="lotsheet-header-row">';
+        html += '<th>Source</th>';
+        html += '<th>Trl</th><th>Srt</th><th>Prog</th>';
+        html += '<th>Lot</th><th>Pen</th>';
+        html += '<th>Sx</th><th>AvWt</th><th>DOF</th><th>EWT</th>';
+        html += '<th>Date In</th><th>Date Out</th>';
+        html += '<th>Orig Hd In</th>';
+        html += '<th>Customer</th>';
+        html += '</tr></thead><tbody>';
+
+        pens.forEach(function (p) {
+            html += '<tr>';
+            html += '<td class="cell-date">' + escapeHtml(p._sourceFile || '') + '</td>';
+            html += '<td>' + escapeHtml(p.trl || '') + '</td>';
+            html += '<td>' + escapeHtml(p.srt || '') + '</td>';
+            html += '<td>' + escapeHtml(p.prog || '') + '</td>';
+            html += '<td class="cell-lot"><strong>' + (p.lotNum || '') + '</strong></td>';
+            html += '<td class="cell-pen"><strong>' + escapeHtml(p.pen || '') + '</strong></td>';
+            html += '<td class="cell-sex">' + escapeHtml(p.sex || '') + '</td>';
+            html += '<td class="cell-num">' + (p.avgWt || '') + '</td>';
+            html += '<td class="cell-num cell-dof"><strong>' + (p.dof || '') + '</strong></td>';
+            html += '<td class="cell-num">' + (p.ewt || '') + '</td>';
+            html += '<td class="cell-date">' + escapeHtml(p.dateIn || '') + '</td>';
+            html += '<td class="cell-date">' + escapeHtml(p.dateOut || '') + '</td>';
+            html += '<td class="cell-num">' + (p.origHdIn || '') + '</td>';
+            html += '<td>' + escapeHtml(p.customer || '') + '</td>';
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        return html;
     }
 })();

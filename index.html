@@ -51,6 +51,8 @@
                 <option value="DEF">DEF</option>
             </select>
             <button id="btn-add-pen" class="btn btn-primary">+ Add Lot</button>
+            <button id="btn-import-pdf" class="btn btn-secondary">Import PDFs</button>
+            <input type="file" id="pdf-file-input" accept=".pdf" multiple class="hidden">
         </div>
         <div id="lotsheet-table-container" class="lotsheet-scroll-container"></div>
     </main>
@@ -374,11 +376,64 @@
         </div>
     </div>
 
+    <!-- PDF Import Preview Modal -->
+    <div id="modal-import" class="modal hidden">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h2 id="modal-import-title">Import Yard Sheets</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="import-body">
+                <!-- Drop Zone -->
+                <div id="import-dropzone" class="import-dropzone">
+                    <div class="dropzone-icon">&#128196;</div>
+                    <p><strong>Drag &amp; drop PDF yard sheets here</strong></p>
+                    <p class="dropzone-sub">or click to browse files from D:\Yard Sheets</p>
+                    <button type="button" id="btn-browse-files" class="btn btn-primary">Browse Files</button>
+                </div>
+
+                <!-- Processing indicator -->
+                <div id="import-processing" class="import-processing hidden">
+                    <div class="spinner"></div>
+                    <p id="import-status-text">Reading PDFs...</p>
+                </div>
+
+                <!-- Preview Table -->
+                <div id="import-preview" class="hidden">
+                    <div class="import-summary">
+                        <span id="import-file-count"></span>
+                        <span id="import-row-count"></span>
+                        <span id="import-error-count" class="hidden"></span>
+                    </div>
+                    <div class="import-options">
+                        <label>
+                            <input type="checkbox" id="import-replace">
+                            Replace existing lot sheet data (unchecked = append)
+                        </label>
+                    </div>
+                    <div id="import-preview-table" class="lotsheet-scroll-container" style="max-height:400px;"></div>
+                    <div id="import-errors" class="hidden"></div>
+                    <div class="form-actions">
+                        <button type="button" id="btn-import-cancel" class="btn btn-secondary">Cancel</button>
+                        <button type="button" id="btn-import-save" class="btn btn-primary">Import All to Lot Sheet</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast container for notifications -->
     <div id="toast-container"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
     <script src="js/store.js"></script>
     <script src="js/alerts.js"></script>
+    <script src="js/pdf-import.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

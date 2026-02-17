@@ -908,6 +908,110 @@ form {
     gap: 12px;
 }
 
+/* === PDF Import Modal === */
+.modal-xl {
+    max-width: 960px;
+}
+
+.import-body {
+    padding: 20px;
+}
+
+/* Drop zone */
+.import-dropzone {
+    border: 3px dashed var(--color-border);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+    transition: var(--transition);
+    cursor: pointer;
+    background: #fafbfc;
+}
+
+.import-dropzone:hover,
+.import-dropzone.dragover {
+    border-color: var(--color-primary);
+    background: #f0faf4;
+}
+
+.dropzone-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.dropzone-sub {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    margin: 8px 0 16px;
+}
+
+/* Processing spinner */
+.import-processing {
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Import summary */
+.import-summary {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.import-summary span {
+    background: var(--color-bg);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.import-options {
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+}
+
+.import-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.import-options input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+/* Import errors */
+.import-error-list {
+    margin-bottom: 16px;
+}
+
+.import-error-item {
+    background: #fef0f0;
+    border-left: 3px solid var(--color-danger);
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.82rem;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
     header {
